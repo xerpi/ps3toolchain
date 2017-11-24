@@ -1,7 +1,7 @@
 #!/bin/sh -e
 # binutils-SPU.sh by Dan Peori (dan.peori@oopo.net)
 
-BINUTILS="binutils-2.25"
+BINUTILS="binutils-2.29.1"
 
 if [ ! -d ${BINUTILS} ]; then
 
