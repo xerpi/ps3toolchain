@@ -96,7 +96,7 @@ index 0000000..a54ba87
 +   -mrelocatable or -mrelocatable-lib is given.  */
 +#undef RELOCATABLE_NEEDS_FIXUP
 +#define RELOCATABLE_NEEDS_FIXUP \
-+  (target_flags & target_flags_explicit & MASK_RELOCATABLE)
++  (rs6000_isa_flags & rs6000_isa_flags_explicit & OPTION_MASK_RELOCATABLE)
 +
 +#undef	RS6000_ABI_NAME
 +#define	RS6000_ABI_NAME "aixdesc"
@@ -223,12 +223,12 @@ index 0000000..a54ba87
 +#endif
 +
 +#undef  ADJUST_FIELD_ALIGN
-+#define ADJUST_FIELD_ALIGN(FIELD, COMPUTED) \
-+  ((TARGET_ALTIVEC && TREE_CODE (TREE_TYPE (FIELD)) == VECTOR_TYPE)	\
++#define ADJUST_FIELD_ALIGN(FIELD, TYPE, COMPUTED) \
++  (rs6000_special_adjust_field_align_p ((TYPE), (COMPUTED))		\
 +   ? 128								\
 +   : (TARGET_64BIT							\
 +      && TARGET_ALIGN_NATURAL == 0					\
-+      && TYPE_MODE (strip_array_types (TREE_TYPE (FIELD))) == DFmode)	\
++      && TYPE_MODE (strip_array_types (TYPE)) == DFmode)		\
 +   ? MIN ((COMPUTED), 32)						\
 +   : (COMPUTED))
 +
