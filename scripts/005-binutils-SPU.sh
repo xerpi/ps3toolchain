@@ -1,18 +1,15 @@
 #!/bin/sh -e
 # binutils-SPU.sh by Dan Peori (dan.peori@oopo.net)
 
-BINUTILS="binutils-2.22"
+BINUTILS="binutils-2.29.1"
 
 if [ ! -d ${BINUTILS} ]; then
 
   ## Download the source code.
-  if [ ! -f ${BINUTILS}.tar.bz2 ]; then wget --continue ftp://ftp.gnu.org/gnu/binutils/${BINUTILS}.tar.bz2; fi
+  if [ ! -f ${BINUTILS}.tar.bz ]; then wget --continue http://ftp.gnu.org/gnu/binutils/${BINUTILS}.tar.bz2; fi
 
   ## Unpack the source code.
   tar xfvj ${BINUTILS}.tar.bz2
-
-  ## Patch the source code.
-  cat ../patches/${BINUTILS}-PS3.patch | patch -p1 -d ${BINUTILS}
 
 fi
 

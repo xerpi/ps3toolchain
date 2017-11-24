@@ -1,6 +1,6 @@
-diff -burN '--exclude=.git' gcc-4.7.4/gcc/config/rs6000/cell64lv2.h gcc-4.7.4-PS3/gcc/config/rs6000/cell64lv2.h
---- gcc-4.7.4/gcc/config/rs6000/cell64lv2.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.7.4-PS3/gcc/config/rs6000/cell64lv2.h	2016-11-09 12:47:43.386122842 +0100
+diff -burN -x build-ppu -x build-spu -x 'gmp*' -x 'isl*' -x libgloss -x 'mpc*' -x 'mpfr*' -x newlib gcc-7.2.0/gcc/config/rs6000/cell64lv2.h ../ps3toolchain/build/gcc-7.2.0/gcc/config/rs6000/cell64lv2.h
+--- gcc-7.2.0/gcc/config/rs6000/cell64lv2.h	1970-01-01 01:00:00.000000000 +0100
++++ ../ps3toolchain/build/gcc-7.2.0/gcc/config/rs6000/cell64lv2.h	2017-11-20 14:31:33.978282475 +0100
 @@ -0,0 +1,440 @@
 +/* Definitions of target machine for GNU compiler,
 +   for 64 bit PowerPC linux.
@@ -74,7 +74,7 @@ diff -burN '--exclude=.git' gcc-4.7.4/gcc/config/rs6000/cell64lv2.h gcc-4.7.4-PS
 +   -mrelocatable or -mrelocatable-lib is given.  */
 +#undef RELOCATABLE_NEEDS_FIXUP
 +#define RELOCATABLE_NEEDS_FIXUP \
-+  (target_flags & target_flags_explicit & MASK_RELOCATABLE)
++  (rs6000_isa_flags & rs6000_isa_flags_explicit & OPTION_MASK_RELOCATABLE)
 +
 +#undef	RS6000_ABI_NAME
 +#define	RS6000_ABI_NAME "aixdesc"
@@ -201,12 +201,12 @@ diff -burN '--exclude=.git' gcc-4.7.4/gcc/config/rs6000/cell64lv2.h gcc-4.7.4-PS
 +#endif
 +
 +#undef  ADJUST_FIELD_ALIGN
-+#define ADJUST_FIELD_ALIGN(FIELD, COMPUTED) \
-+  ((TARGET_ALTIVEC && TREE_CODE (TREE_TYPE (FIELD)) == VECTOR_TYPE)	\
++#define ADJUST_FIELD_ALIGN(FIELD, TYPE, COMPUTED) \
++  (rs6000_special_adjust_field_align_p ((TYPE), (COMPUTED))		\
 +   ? 128								\
 +   : (TARGET_64BIT							\
 +      && TARGET_ALIGN_NATURAL == 0					\
-+      && TYPE_MODE (strip_array_types (TREE_TYPE (FIELD))) == DFmode)	\
++      && TYPE_MODE (strip_array_types (TYPE)) == DFmode)		\
 +   ? MIN ((COMPUTED), 32)						\
 +   : (COMPUTED))
 +
@@ -322,7 +322,7 @@ diff -burN '--exclude=.git' gcc-4.7.4/gcc/config/rs6000/cell64lv2.h gcc-4.7.4-PS
 +	{ "asm_spec64",	ASM_SPEC64 },		\
 +	{ "link_os_lv2_spec32",	LINK_OS_LV2_SPEC32 },		\
 +	{ "link_os_lv2_spec64",	LINK_OS_LV2_SPEC64 },		\
-+	
++
 +
 +#undef  TOC_SECTION_ASM_OP
 +#define TOC_SECTION_ASM_OP \
@@ -442,47 +442,29 @@ diff -burN '--exclude=.git' gcc-4.7.4/gcc/config/rs6000/cell64lv2.h gcc-4.7.4-PS
 +#define RS6000_DEFAULT_LONG_DOUBLE_SIZE 128
 +#endif
 +
-diff -burN '--exclude=.git' gcc-4.7.4/gcc/config/rs6000/rs6000.c gcc-4.7.4-PS3/gcc/config/rs6000/rs6000.c
---- gcc-4.7.4/gcc/config/rs6000/rs6000.c	2013-07-10 00:37:30.000000000 +0200
-+++ gcc-4.7.4-PS3/gcc/config/rs6000/rs6000.c	2016-11-09 12:47:43.406122569 +0100
-@@ -1229,6 +1229,13 @@
- static void rs6000_code_end (void) ATTRIBUTE_UNUSED;
- static void rs6000_set_up_by_prologue (struct hard_reg_set_container *);
- 
-+
-+#ifdef POWERPC_CELL64LV2
-+
-+static bool rs6000_cell64lv2_valid_pointer_mode(enum machine_mode);
-+
-+#endif
-+
- /* Hash table stuff for keeping track of TOC entries.  */
- 
- struct GTY(()) toc_hash_struct
-@@ -27985,6 +27992,20 @@
-     add_to_hard_reg_set (&set->set, Pmode, RS6000_PIC_OFFSET_TABLE_REGNUM);
- }
- 
-+#ifdef POWERPC_CELL64LV2
-+#undef TARGET_VALID_POINTER_MODE
-+#define TARGET_VALID_POINTER_MODE rs6000_cell64lv2_valid_pointer_mode
-+#endif
-+
+diff -burN -x build-ppu -x build-spu -x 'gmp*' -x 'isl*' -x libgloss -x 'mpc*' -x 'mpfr*' -x newlib gcc-7.2.0/gcc/config/rs6000/rs6000.c ../ps3toolchain/build/gcc-7.2.0/gcc/config/rs6000/rs6000.c
+--- gcc-7.2.0/gcc/config/rs6000/rs6000.c	2017-07-29 00:29:31.000200000 +0200
++++ ../ps3toolchain/build/gcc-7.2.0/gcc/config/rs6000/rs6000.c	2017-11-20 14:57:37.077034506 +0100
+@@ -43337,3 +43337,16 @@
  struct gcc_target targetm = TARGET_INITIALIZER;
  
+ #include "gt-rs6000.h"
++
 +#ifdef POWERPC_CELL64LV2
 +
-+static bool rs6000_cell64lv2_valid_pointer_mode(enum machine_mode mode)
++#undef TARGET_VALID_POINTER_MODE
++#define TARGET_VALID_POINTER_MODE rs6000_cell64lv2_valid_pointer_mode
++
++static bool
++rs6000_cell64lv2_valid_pointer_mode (enum machine_mode mode)
 +{
-+	return (mode == SImode || (TARGET_64BIT && mode == DImode) || mode == ptr_mode || mode == Pmode);
++  return (mode == SImode || (TARGET_64BIT && mode == DImode) || mode == ptr_mode || mode == Pmode);
 +}
 +
 +#endif
-+
- #include "gt-rs6000.h"
-diff -burN '--exclude=.git' gcc-4.7.4/gcc/config/rs6000/t-cell64lv2 gcc-4.7.4-PS3/gcc/config/rs6000/t-cell64lv2
---- gcc-4.7.4/gcc/config/rs6000/t-cell64lv2	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.7.4-PS3/gcc/config/rs6000/t-cell64lv2	2016-11-09 12:47:43.406122569 +0100
+diff -burN -x build-ppu -x build-spu -x 'gmp*' -x 'isl*' -x libgloss -x 'mpc*' -x 'mpfr*' -x newlib gcc-7.2.0/gcc/config/rs6000/t-cell64lv2 ../ps3toolchain/build/gcc-7.2.0/gcc/config/rs6000/t-cell64lv2
+--- gcc-7.2.0/gcc/config/rs6000/t-cell64lv2	1970-01-01 01:00:00.000000000 +0100
++++ ../ps3toolchain/build/gcc-7.2.0/gcc/config/rs6000/t-cell64lv2	2017-11-20 14:58:28.843808957 +0100
 @@ -0,0 +1,25 @@
 +#rs6000/t-cell64lv2
 +
@@ -509,15 +491,15 @@ diff -burN '--exclude=.git' gcc-4.7.4/gcc/config/rs6000/t-cell64lv2 gcc-4.7.4-PS
 +LIB2FUNCS_EXTRA := $(sort $(LIB2FUNCS_EXTRA))
 +
 +TARGET_LIBGCC2_CFLAGS += -mno-minimal-toc
-diff -burN '--exclude=.git' gcc-4.7.4/gcc/config.gcc gcc-4.7.4-PS3/gcc/config.gcc
---- gcc-4.7.4/gcc/config.gcc	2013-10-03 02:52:23.000000000 +0200
-+++ gcc-4.7.4-PS3/gcc/config.gcc	2016-11-09 12:47:43.416122432 +0100
-@@ -1959,6 +1959,15 @@
+diff -burN -x build-ppu -x build-spu -x 'gmp*' -x 'isl*' -x libgloss -x 'mpc*' -x 'mpfr*' -x newlib gcc-7.2.0/gcc/config.gcc ../ps3toolchain/build/gcc-7.2.0/gcc/config.gcc
+--- gcc-7.2.0/gcc/config.gcc	2017-07-31 13:33:18.182361000 +0200
++++ ../ps3toolchain/build/gcc-7.2.0/gcc/config.gcc	2017-11-20 21:54:45.923276015 +0100
+@@ -2330,6 +2330,15 @@
  #	tmake_file="${tmake_file} rs6000/t-fprules"
  #	extra_headers=
  #	;;
 +powerpc64-ps3-elf)
-+	tm_file="${tm_file} dbxelf.h elfos.h usegas.h freebsd-spec.h rs6000/sysv4.h rs6000/default64.h"
++	tm_file="${tm_file} dbxelf.h elfos.h usegas.h freebsd-spec.h newlib-stdint.h rs6000/sysv4.h rs6000/default64.h"
 +	tm_file="rs6000/biarch64.h ${tm_file} rs6000/cell64lv2.h"
 +	if test x${enable_secureplt} = xyes; then
 +		tm_file="rs6000/secureplt.h ${tm_file}"
@@ -528,15 +510,15 @@ diff -burN '--exclude=.git' gcc-4.7.4/gcc/config.gcc gcc-4.7.4-PS3/gcc/config.gc
  powerpc-*-darwin*)
  	extra_options="${extra_options} rs6000/darwin.opt"
  	case ${target} in
-diff -burN '--exclude=.git' gcc-4.7.4/libgcc/config.host gcc-4.7.4-PS3/libgcc/config.host
---- gcc-4.7.4/libgcc/config.host	2014-03-20 17:13:10.000000000 +0100
-+++ gcc-4.7.4-PS3/libgcc/config.host	2016-11-09 12:47:43.416122432 +0100
-@@ -895,6 +895,8 @@
+diff -burN -x build-ppu -x build-spu -x 'gmp*' -x 'isl*' -x libgloss -x 'mpc*' -x 'mpfr*' -x newlib gcc-7.2.0/libgcc/config.host ../ps3toolchain/build/gcc-7.2.0/libgcc/config.host
+--- gcc-7.2.0/libgcc/config.host	2017-05-10 22:42:58.366374000 +0200
++++ ../ps3toolchain/build/gcc-7.2.0/libgcc/config.host	2017-11-20 13:59:14.871030405 +0100
+@@ -1043,6 +1043,8 @@
  	tmake_file="${tmake_file} rs6000/t-ppccomm rs6000/t-savresfgpr rs6000/t-crtstuff t-crtstuff-pic t-fdpbit"
  	extra_parts="$extra_parts crtbeginS.o crtendS.o crtbeginT.o ecrti.o ecrtn.o ncrti.o ncrtn.o"
  	;;
 +powerpc64-ps3-elf)
 +	;;
- powerpc-*-linux* | powerpc64-*-linux*)
- 	tmake_file="${tmake_file} rs6000/t-ppccomm rs6000/t-savresfgpr rs6000/t-crtstuff rs6000/t-linux t-softfp-sfdf t-softfp-excl t-dfprules rs6000/t-ppc64-fp t-softfp t-slibgcc-libgcc"
- 	extra_parts="$extra_parts ecrti.o ecrtn.o ncrti.o ncrtn.o"
+ powerpc*-*-linux*)
+ 	tmake_file="${tmake_file} rs6000/t-ppccomm rs6000/t-savresfgpr rs6000/t-crtstuff rs6000/t-linux t-dfprules rs6000/t-ppc64-fp t-slibgcc-libgcc"
+ 	tmake_file="${tmake_file} t-stack rs6000/t-stack-rs6000"
